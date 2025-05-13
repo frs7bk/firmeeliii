@@ -1,0 +1,291 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}معاينة المشروع | لوحة التحكم{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+  .preview-badge {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+    padding: 8px 16px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 30px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  
+  .portfolio-detail-container {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  
+  .portfolio-header {
+    position: relative;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    background-color: rgba(0,0,0,0.8);
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  }
+  
+  .portfolio-image {
+    width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto 2rem;
+  }
+  
+  .video-container {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 */
+    height: 0;
+    margin-bottom: 2rem;
+  }
+  
+  .video-container iframe,
+  .video-container video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+  }
+  
+  .portfolio-info {
+    padding: 2rem;
+    background-color: rgba(30, 30, 30, 0.8);
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    margin-bottom: 2rem;
+  }
+  
+  .portfolio-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  
+  .meta-item {
+    display: flex;
+    align-items: center;
+    margin-left: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .meta-item i {
+    margin-left: 0.5rem;
+    color: #6c757d;
+  }
+  
+  .portfolio-description {
+    white-space: pre-line;
+    line-height: 1.8;
+  }
+  
+  .action-buttons {
+    position: sticky;
+    bottom: 20px;
+    padding: 15px;
+    background-color: rgba(20, 20, 20, 0.9);
+    border-radius: 50px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    width: fit-content;
+    margin: 0 auto;
+    z-index: 1000;
+  }
+  
+  .action-buttons .btn {
+    padding: 8px 16px;
+    border-radius: 50px;
+    margin: 0 5px;
+  }
+</style>
+{% endblock %}
+
+{% block page_title %}معاينة المشروع{% endblock %}
+
+{% block admin_content %}
+<!-- شارة المعاينة -->
+<div class="preview-badge bg-warning text-dark">
+  <i class="fas fa-eye me-2"></i> وضع المعاينة
+</div>
+
+<div class="d-flex justify-content-between mb-4">
+  {% if session.prev_page == 'edit' and session.edit_portfolio_id %}
+    <a href="{{ url_for('update_portfolio_item', portfolio_id=session.edit_portfolio_id) }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-right me-1"></i>
+      العودة إلى تعديل المشروع
+    </a>
+  {% else %}
+    <a href="{{ url_for('add_portfolio_item') }}" class="btn btn-secondary">
+      <i class="fas fa-arrow-right me-1"></i>
+      العودة إلى إضافة المشروع
+    </a>
+  {% endif %}
+</div>
+
+<div class="portfolio-detail-container">
+  <div class="portfolio-header">
+    <h1 class="display-5 fw-bold text-center">{{ item.title }}</h1>
+    {% if item.title_en %}
+      <p class="text-muted text-center">{{ item.title_en }}</p>
+    {% endif %}
+    <div class="text-center mb-3">
+      <span class="badge bg-primary rounded-pill px-3 py-2 fs-6">
+        <i class="fas fa-tag me-1"></i> {{ item.category }}
+      </span>
+    </div>
+  </div>
+
+  <!-- عرض الصورة أو الفيديو -->
+  {% if item.video_type == 'external' and item.video_url %}
+    <div class="video-container">
+      {% if 'youtube.com' in item.video_url or 'youtu.be' in item.video_url %}
+        {% set youtube_id = item.video_url.split('v=')[1] if 'v=' in item.video_url else item.video_url.split('/')[-1] %}
+        <iframe src="https://www.youtube.com/embed/{{ youtube_id }}" 
+                frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen></iframe>
+      {% elif 'vimeo.com' in item.video_url %}
+        {% set vimeo_id = item.video_url.split('/')[-1] %}
+        <iframe src="https://player.vimeo.com/video/{{ vimeo_id }}" 
+                frameborder="0" allow="autoplay; fullscreen; picture-in-picture" 
+                allowfullscreen></iframe>
+      {% else %}
+        <div class="alert alert-warning">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          الرابط المدخل غير مدعوم للمعاينة. يمكن معاينة روابط يوتيوب وفيميو فقط.
+        </div>
+        <img src="{{ item.image_url }}" alt="{{ item.title }}" class="portfolio-image">
+      {% endif %}
+    </div>
+  {% elif item.video_type == 'local' and item.video_file %}
+    <div class="video-container">
+      <video controls>
+        <source src="{{ item.video_file }}" type="video/mp4">
+        المتصفح الخاص بك لا يدعم عرض الفيديو.
+      </video>
+    </div>
+  {% else %}
+    <img src="{{ item.image_url }}" alt="{{ item.title }}" class="portfolio-image">
+  {% endif %}
+
+  <!-- معلومات المشروع -->
+  <div class="portfolio-info">
+    <h4 class="mb-3">وصف المشروع</h4>
+    <div class="portfolio-description">{{ item.description|safe }}</div>
+    
+    {% if item.description_en %}
+      <h4 class="mt-4 mb-3">وصف المشروع (بالإنجليزية)</h4>
+      <div class="portfolio-description text-muted">{{ item.description_en|safe }}</div>
+    {% endif %}
+    
+    {% if item.link %}
+      <div class="mt-4">
+        <strong>رابط المشروع:</strong>
+        <a href="{{ item.link }}" target="_blank" class="text-info text-decoration-none ms-2">
+          <i class="fas fa-external-link-alt me-1"></i>{{ item.link }}
+        </a>
+      </div>
+    {% endif %}
+    
+    <div class="portfolio-meta mt-4">
+      <div class="meta-item">
+        <i class="far fa-calendar-alt"></i>
+        <span>{{ item.created_at.strftime('%Y-%m-%d') }}</span>
+      </div>
+      <div class="meta-item">
+        <i class="far fa-eye"></i>
+        <span>{{ item.views_count }} مشاهدة</span>
+      </div>
+      <div class="meta-item">
+        <i class="far fa-heart"></i>
+        <span>{{ item.likes_count }} إعجاب</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- أزرار العمليات -->
+  <div class="action-buttons d-flex justify-content-center">
+    {% if session.prev_page == 'edit' and session.edit_portfolio_id %}
+      <a href="{{ url_for('update_portfolio_item', portfolio_id=session.edit_portfolio_id) }}" class="btn btn-secondary">
+        <i class="fas fa-pen me-1"></i>
+        العودة للتعديل
+      </a>
+      
+      <!-- زر النشر يقوم بتقديم نموذج التعديل -->
+      <form id="publishForm" action="{{ url_for('update_portfolio_item', portfolio_id=session.edit_portfolio_id) }}" method="POST" enctype="multipart/form-data">
+        <!-- إضافة الحقول المخفية -->
+        <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token() }}">
+        <!-- البيانات التي سيتم إرسالها للحفظ -->
+        <input type="hidden" name="title" value="{{ item.title }}">
+        <input type="hidden" name="title_en" value="{{ item.title_en }}">
+        <input type="hidden" name="description" value="{{ item.description }}">
+        <input type="hidden" name="description_en" value="{{ item.description_en }}">
+        <input type="hidden" name="category" value="{{ item.category }}">
+        <input type="hidden" name="link" value="{{ item.link }}">
+        <input type="hidden" name="video_type" value="{{ item.video_type }}">
+        <input type="hidden" name="video_url" value="{{ item.video_url }}">
+        <!-- لا يمكن إرسال ملفات مخفية، سيتم التعامل معها في الصفحة الأصلية -->
+        
+        <button type="submit" class="btn btn-success">
+          <i class="fas fa-check me-1"></i>
+          حفظ التغييرات
+        </button>
+      </form>
+    {% else %}
+      <a href="{{ url_for('add_portfolio_item') }}" class="btn btn-secondary">
+        <i class="fas fa-pen me-1"></i>
+        العودة للتعديل
+      </a>
+      
+      <!-- زر النشر يقوم بتقديم نموذج الإضافة -->
+      <form id="publishForm" action="{{ url_for('add_portfolio_item') }}" method="POST" enctype="multipart/form-data">
+        <!-- إضافة الحقول المخفية -->
+        <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token() }}">
+        <!-- البيانات التي سيتم إرسالها للحفظ -->
+        <input type="hidden" name="title" value="{{ item.title }}">
+        <input type="hidden" name="title_en" value="{{ item.title_en }}">
+        <input type="hidden" name="description" value="{{ item.description }}">
+        <input type="hidden" name="description_en" value="{{ item.description_en }}">
+        <input type="hidden" name="category" value="{{ item.category }}">
+        <input type="hidden" name="link" value="{{ item.link }}">
+        <input type="hidden" name="video_type" value="{{ item.video_type }}">
+        <input type="hidden" name="video_url" value="{{ item.video_url }}">
+        <!-- لا يمكن إرسال ملفات مخفية، سيتم التعامل معها في الصفحة الأصلية -->
+        <input type="hidden" name="preview_confirmed" value="1">
+        
+        <button type="submit" class="btn btn-success">
+          <i class="fas fa-check me-1"></i>
+          نشر المشروع
+        </button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // يتم تنفيذ العمليات هنا بعد تحميل الصفحة
+    console.log("Preview page loaded successfully");
+    
+    // هنا يمكن إضافة أي تأثيرات إضافية مثل التبديل بين الصور في حالة وجود كاروسيل
+    // أو عناصر تفاعلية أخرى
+  });
+</script>
+{% endblock %}

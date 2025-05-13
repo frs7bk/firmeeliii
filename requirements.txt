@@ -1,0 +1,11 @@
+flask
+flask-sqlalchemy
+flask-login
+flask-wtf
+gunicorn
+psycopg2-binary
+email-validator
+werkzeug
+wtforms
+sqlalchemy
+sendgrid
